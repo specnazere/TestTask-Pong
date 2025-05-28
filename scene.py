@@ -17,7 +17,7 @@ class Scene:
         # Инициализация Pygame
         pygame.init()
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Physics Balls Simulation")
+        pygame.display.set_caption("TestTask-Pong")
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -37,24 +37,34 @@ class Scene:
     def post_init(self):
         # Проверяем все пары мячей на столкновение
         for i in range(len(self.balls)):
-            nearestTime = None
-            nearestBall = None
-            for j in range(i + 1, len(self.balls)):
-                t = Ball.get_collision(self.balls[i], self.balls[j])
-                if t is not None:
-                    if nearestTime is None or t < nearestTime:
-                        nearestTime = t
-                        nearestBall = self.balls[j]
-            if nearestBall is not None:
-                self.collisions.append((nearestTime, 'ball', self.balls[i], nearestBall))
-
-        # Проверяем столкновения с границами
-        for ball in self.balls:
-            t, wall = ball.get_wall_collision()
-            if t is not None:
-                self.collisions.append((t, 'wall', ball, wall))
+            self.check_collisions(self.balls[i])
 
         self.collisions.sort(key=lambda x: x[0])  # Сортируем по времени
+
+    def check_collisions(self, ball):
+        t, wall = ball.get_wall_collision()
+        if t is not None:
+            self.collisions.append((t, 'wall', ball, wall))
+        nearestTime = None
+        nearestBall = None
+        for i in range(0, len(self.balls)):
+            if self.balls[i] == ball: continue
+            t = Ball.get_collision(ball, self.balls[i])
+            if t is not None:
+                if nearestTime is None or t < nearestTime:
+                    nearestTime = t
+                    nearestBall = self.balls[i]
+        if nearestBall is not None:
+            self.collisions.append((nearestTime, 'ball', ball, nearestBall))
+
+    def reprocess_collisions(self, ball):
+        colIndex = 0
+        while colIndex < len(self.collisions):
+            if self.collisions[colIndex][2] == ball or self.collisions[colIndex][3] == ball:
+                self.collisions.pop(colIndex)
+            else:
+                colIndex += 1
+        self.check_collisions(ball)
 
     def update_balls(self, dt):
         """Обновляет позиции и обрабатывает столкновения"""
@@ -64,6 +74,14 @@ class Scene:
             for ball in self.balls:
                 ball.update(dt)
             return
+
+        for ball1 in self.balls:
+            for ball2 in self.balls:
+                if ball1 != ball2:
+                    if (ball1.position - ball2.position).norm_sq() < (ball1.radius + ball2.radius) ** 2:
+                        Ball.process_collision(ball1, ball2)
+                        self.reprocess_collisions(ball1)
+                        self.reprocess_collisions(ball2)
 
         # Находим ближайшее столкновение
         nearest_t, collision_type, obj1, obj2 = self.collisions[0]
@@ -79,57 +97,14 @@ class Scene:
             # Обрабатываем само столкновение
             if collision_type == 'ball':
                 Ball.process_collision(obj1, obj2)  # t=0, потому что уже переместили
-                colIndex = 0
-                while colIndex < len(self.collisions):
-                    if self.collisions[colIndex][2] == obj1 or self.collisions[colIndex][2] == obj2 \
-                        or self.collisions[colIndex][3] == obj1 or self.collisions[colIndex][3] == obj2:
-                        self.collisions.pop(colIndex)
-                    else:
-                        colIndex += 1
+                self.reprocess_collisions(obj1)
+                self.reprocess_collisions(obj2)
             elif collision_type == 'wall':
                 obj1.reflect_on_wall(obj2)
-
-                colIndex = 0
-                while colIndex < len(self.collisions):
-                    if self.collisions[colIndex][2] == obj1:
-                        self.collisions.pop(colIndex)
-                    else:
-                        colIndex += 1
+                self.reprocess_collisions(obj1)
 
             # После обработки столкновения, обновляем всё остальное
             remaining_time = dt - nearest_t
-
-            # Проверяем все пары мячей на столкновение
-            nearestTime = None
-            nearestBall = None
-            for i in range(0, len(self.balls)):
-                if self.balls[i] == obj1: continue
-                t = Ball.get_collision(obj1, self.balls[i])
-                if t is not None:
-                    if nearestTime is None or t < nearestTime:
-                        nearestTime = t
-                        nearestBall = self.balls[i]
-            if nearestBall is not None:
-                self.collisions.append((nearestTime, 'ball', obj1, nearestBall))
-
-            t, wall = obj1.get_wall_collision()
-            if t is not None:
-                self.collisions.append((t, 'wall', obj1, wall))
-            if collision_type == 'ball':
-                t, wall = obj2.get_wall_collision()
-                if t is not None:
-                    self.collisions.append((t, 'wall', obj2, wall))
-                nearestTime = None
-                nearestBall = None
-                for i in range(0, len(self.balls)):
-                    if self.balls[i] == obj2: continue
-                    t = Ball.get_collision(obj2, self.balls[i])
-                    if t is not None:
-                        if nearestTime is None or t < nearestTime:
-                            nearestTime = t
-                            nearestBall = self.balls[i]
-                if nearestBall is not None:
-                    self.collisions.append((nearestTime, 'ball', obj2, nearestBall))
 
             self.collisions.sort(key=lambda x: x[0])  # Сортируем по времени
             self.collisions = [(x[0] - nearest_t, x[1], x[2], x[3]) for x in self.collisions]
