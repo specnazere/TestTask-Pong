@@ -10,6 +10,7 @@ class TickManager:
     _time_scale = 1.0          # Множитель времени (например: 2.0 — ускорение в 2 раза)
     _last_tick_real_time = 0.0 # Время начала последнего тика
     _previous_tick_length = 0.0
+    paused = False
 
     @staticmethod
     def initialize():
@@ -38,6 +39,8 @@ class TickManager:
     @staticmethod
     def tick():
         """Вызывается при каждом тике. Обновляет прошедшее время и сохраняет предыдущий тик."""
+        if TickManager.paused:
+            return None
         with TickManager._lock:
             current_time = time.time()
             elapsed_real_time = current_time - TickManager._last_tick_real_time
@@ -54,9 +57,26 @@ class TickManager:
     @staticmethod
     def get_previous_tick_length():
         """Возвращает длину предыдущего тика."""
-        return TickManager._previous_tick_length
+        if TickManager.paused:
+            return 0
+        else:
+            return TickManager._previous_tick_length
 
     @staticmethod
     def get_real_time():
         """Возвращает накопленное реальное время."""
         return TickManager._real_time
+
+    @staticmethod
+    def switchTime(to = None):
+        if to is None:
+            if TickManager.paused:
+                TickManager._last_tick_real_time = time.time()
+                TickManager.paused = False
+            else:
+                TickManager.paused = True
+        elif to == False:
+            TickManager._last_tick_real_time = time.time()
+            TickManager.paused = to
+        else:
+            TickManager.paused = to

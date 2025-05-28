@@ -33,6 +33,10 @@ class Scene:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    TickManager.switchTime()
+                    print("time switched")
 
     def post_init(self):
         # Проверяем все пары мячей на столкновение
@@ -121,6 +125,7 @@ class Scene:
                 int(ball.radius)
             )
         pygame.display.flip()
+
 
     def run(self, fps=60):
         """Запуск главного цикла"""
