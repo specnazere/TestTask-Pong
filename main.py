@@ -3,11 +3,13 @@ if __name__ == "__main__":
     from scene import Scene
     from ball import Ball
     from random import randint
+    from fileParser import FileParser
 
     width = 1000
     height = 1000
 
     scene = Scene(width, height)
+    balls = FileParser.parse_balls_from_file("input.txt")
 
     b1 = Ball(Point(200, 100), Point(0, 0), Point(0, 0), 20)
     b2 = Ball(Point(200, 200), Point(90, 20), Point(0, -10), 20)
