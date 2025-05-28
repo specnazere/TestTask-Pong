@@ -9,38 +9,48 @@ class FileParser:
     def parse_balls_from_file(filename):
         objects = []
         with open(filename, 'r') as file:
-            for line in file:
+            for line_num, line in enumerate(file, start=1):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
 
                 parts = line.split(maxsplit=1)
                 if len(parts) < 2:
-                    raise ValueError(f"Недостаточно данных в строке: {line}")
+                    raise ValueError(f"[Строка {line_num}] Недостаточно данных: '{line}'")
 
                 obj_type, rest = parts[0], parts[1]
 
                 if obj_type != "Ball":
-                    raise ValueError(f"Неизвестный тип объекта: {obj_type}")
+                    raise ValueError(f"[Строка {line_num}] Неизвестный тип объекта: '{obj_type}'")
 
                 tokens = rest.split()
 
                 processed_tokens = []
                 for token in tokens:
-                    if token.startswith("rand(") and token.endswith(")"):
-                        match = re.match(r'rand\(([-+]?\d*\.?\d+)\.\.([-+]?\d*\.?\d+)\)', token)
-                        if match:
-                            min_val = float(match.group(1))
-                            max_val = float(match.group(2))
+                    if token.lower().startswith("rand(") and token.endswith(")"):
+                        try:
+                            content = token[4:-1].strip()
+                            min_val, max_val = map(float, content.split(','))
                             random_val = random.uniform(min_val, max_val)
                             processed_tokens.append(str(random_val))
-                        else:
-                            raise ValueError(f"Неверный формат случайного значения: {token}")
+                        except Exception as e:
+                            raise ValueError(
+                                f"[Строка {line_num}] Ошибка в rand(): '{token}': {e}"
+                            )
                     else:
-                        processed_tokens.append(token)
+                        try:
+                            processed_tokens.append(float(token))
+                        except ValueError:
+                            raise ValueError(
+                                f"[Строка {line_num}] Неверное значение: '{token}'. "
+                                "Ожидалось число или функция."
+                            )
 
                 if len(processed_tokens) != 7:
-                    raise ValueError(f"Неверное количество параметров для Ball: {line}")
+                    raise ValueError(
+                        f"[Строка {line_num}] Неверное количество параметров для Ball: "
+                        f"получено {len(processed_tokens)}, ожидается 7"
+                    )
 
                 data = list(map(float, processed_tokens))
 
