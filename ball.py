@@ -29,52 +29,6 @@ class Ball:
                 self.acceleration.y = 0
                 self.velocity.y = 0
 
-
-    @staticmethod
-    def get_collision(ball1, ball2):
-        summSpeed = ball2.velocity - ball1.velocity
-        summAcc = ball2.acceleration - ball1.acceleration
-        summRadSQ = (ball1.radius + ball2.radius) ** 2
-
-        A = (summAcc.x ** 2 + summAcc.y ** 2) / 2
-        B = (summSpeed.x * summAcc.x + summSpeed.y * summAcc.y) * (3 / 2)
-        C = (summSpeed.x ** 2 + summSpeed.y ** 2) + (summAcc.x * (ball2.position.x - ball1.position.x) + summAcc.y * (ball2.position.y - ball1.position.y))
-        D = (summSpeed.x * (ball2.position.x - ball1.position.x) + summSpeed.y * (ball2.position.y - ball1.position.y))
-
-        coeffs = [A, B, C, D]
-        roots = np.roots(coeffs)
-        roots.sort();
-
-        extremum = -1
-
-        if roots.dtype != np.complex128:
-            for root in roots:
-                if root < 0: continue
-                if (ball2.position + summSpeed * root + summAcc * root ** 2 / 2 - ball1.position).norm_sq() < summRadSQ:
-                    extremum = root
-                    break
-        else:
-            for root in roots:
-                if root.imag != 0 or root.real < 0: continue
-                if (ball2.position + summSpeed * root.real + summAcc * root.real ** 2 / 2 - ball1.position).norm_sq() < summRadSQ:
-                    extremum = root.real
-                    break
-
-        if extremum == -1:
-            return None
-        else:
-            pos = extremum / 2
-            step = extremum / 4
-
-            while step > 1e-3:
-                position = ball2.position + summSpeed * pos + summAcc * pos ** 2 / 2
-                if (position - ball1.position).norm_sq() < summRadSQ:
-                    pos -= step
-                else:
-                    pos += step
-                step /= 2
-            return pos
-
     def get_wall_collision(self):
         """
         Возвращает минимальное время до столкновения с любым из краев поля.
