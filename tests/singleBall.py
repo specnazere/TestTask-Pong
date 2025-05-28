@@ -5,14 +5,12 @@ if __name__ == "__main__":
     from random import randint
     from fileParser import FileParser
 
-    width = 500
-    height = 500
+    width = 200
+    height = 200
 
     scene = Scene(width, height)
-    balls = FileParser.parse_balls_from_file("input.txt")
 
-    for ball in balls:
-        scene.add_ball(ball)
-
+    b1 = Ball(Point(100, 100), Point(0, 0), Point(0, 0), 20)
+    scene.add_ball(b1)
 
     scene.run()
